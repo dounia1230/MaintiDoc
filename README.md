@@ -159,7 +159,7 @@ Le superviseur doit consulter `get_equipment_history(equipment_id)` et `get_open
 
 Le pipeline découpe le texte en passages d'environ 256 mots, avec un recouvrement de 32 mots. Les métadonnées conservent le fichier, la page, le type de contenu et la version d'ingestion. Les tableaux sont conservés sous forme de lignes et colonnes, puis indexés en Markdown.
 
-Le VLM décrit les figures des manuels à partir de leurs pixels. Le texte, les tableaux et ces descriptions sont encodés avec **BGE-M3**, sans préfixes de requête. Cette version utilise ses embeddings denses ; la recherche lexicale BM25 est calculée séparément. Les figures reçoivent aussi des embeddings **CLIP**, dans un espace visuel distinct.
+Dans le prototype actuel, le VLM décrit les figures des manuels à partir de leurs pixels. Le texte, les tableaux et ces descriptions sont encodés avec **BGE-M3**, sans préfixes de requête. Cette version utilise ses embeddings denses ; la recherche lexicale BM25 est calculée séparément. Les figures reçoivent aussi des embeddings **CLIP**, dans un espace visuel distinct. La fusion RRF et le reranker du schéma cible ne sont pas encore implémentés.
 
 Lors d'une question, la recherche combine BM25 français et similarité BGE-M3. Si une photo est fournie, CLIP retrouve les figures visuellement proches. La photo de l'utilisateur n'est pas directement décrite par le VLM dans ce parcours. La génération s'appuie sur les passages et descriptions retrouvés ; l'interface affiche les références et jusqu'à deux figures ou aperçus de pages.
 
@@ -194,7 +194,9 @@ Le serveur MCP sérialise les recherches et l'indexation avec un verrou. Utilise
 | `garantie.py` / `data/garanties.json` | Consultation du registre de garanties fictif |
 | `tests/` | Tests applicatifs, stockage Qdrant et intégration avec modèles réels |
 
-## Installation
+## Installation du prototype actuel
+
+Les commandes ci-dessous correspondent au code exécutable de ce dépôt : BGE-M3 et Qwen3.5 via Ollama, Qdrant et Streamlit. Le diagramme cible ne nécessite pas d'installer dès maintenant les composants encore prévus, notamment PostgreSQL, MinIO, MLflow et les bots.
 
 Prérequis : Python 3.11+, [uv](https://docs.astral.sh/uv/), [Ollama](https://ollama.com/) et Docker avec Compose. Exécuter les commandes depuis la racine du dépôt.
 
@@ -320,7 +322,7 @@ Les étapes ci-dessous reprennent la feuille de route pédagogique. Les tests te
 | 1 — RAG documentaire | Extraction, découpage, métadonnées, BGE-M3, Qdrant, LangChain et Streamlit | Corpus autorisé de 30 à 50 documents sur deux familles, FastAPI, permissions documentaires, OCR si nécessaire et validation du corpus |
 | 2 — Multimodalité et fine-tuning | Figures décrites par VLM, tableaux, schémas et recherche par photo CLIP | Recherche texte-image multilingue, reranker et adaptation sur 800 à 1 500 exemples vérifiés, comparaison nDCG@5/MRR@10 et réponses Pydantic avec incertitudes/clarifications |
 | 3 — Agentique et MCP | Routage LangGraph, client/serveur MCP documentaire et agent garantie | Historique de maintenance, tickets ouverts, brouillons, création après approbation liée au contenu et à l'utilisateur, autorisations et idempotence |
-| 4 — Intégration et déploiement | Client Streamlit, dépendances verrouillées, Compose pour Qdrant et tests applicatifs | Bot Telegram/Discord, identités, conteneurisation complète, tests d'injection/accès/approbation, environ 150 scénarios, mesures et démonstration finale |
+| 4 — Intégration et déploiement | Client Streamlit, dépendances verrouillées, Compose pour Qdrant et tests applicatifs | Bot Telegram/Discord, identités, PostgreSQL/MinIO, MLflow, monitoring, conteneurisation complète, tests d'injection/accès/approbation, environ 150 scénarios, mesures et démonstration finale |
 
 Le registre de garanties fictif est un complément ; il ne remplace pas l'historique de maintenance demandé.
 
