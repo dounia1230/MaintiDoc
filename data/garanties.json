@@ -1,0 +1,12 @@
+{
+  "PX200-0042": {
+    "modele": "PX-200 (appareil fictif)",
+    "debut_garantie": "2026-01-15",
+    "fin_garantie": "2028-01-15"
+  },
+  "PX200-0001": {
+    "modele": "PX-200 (appareil fictif)",
+    "debut_garantie": "2022-02-01",
+    "fin_garantie": "2024-02-01"
+  }
+}
