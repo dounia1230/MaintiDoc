@@ -6,6 +6,7 @@ __pycache__/
 .ipynb_checkpoints/
 /AGENTS.md
 /docs/
+/Feuille de route du projet IA Générative Multi Modale et Agentique.pdf
 data/qdrant/
 data/figures/
 data/descriptions/
