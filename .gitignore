@@ -1,0 +1,14 @@
+.venv/
+.env
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+/AGENTS.md
+/docs/
+data/qdrant/
+data/figures/
+data/descriptions/
+data/manuels/*.pdf
+data/photos/*
+!data/photos/.gitkeep

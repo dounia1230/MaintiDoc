@@ -1,0 +1,41 @@
+[project]
+name = "maintidoc"
+version = "0.1.0"
+description = "Assistant documentaire multimodal : BGE-M3, Qdrant, LangGraph et MCP"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel>=7.4.0",
+    "langchain>=1.5.2",
+    "langchain-mcp-adapters>=0.2,<0.4",
+    "langchain-ollama>=1.1.0",
+    "langgraph>=1.0,<2",
+    "llama-index-core>=0.14,<0.15",
+    "llama-index-embeddings-ollama>=0.8,<0.9",
+    "llama-index-readers-file>=0.5,<0.6",
+    "mcp>=1.24,<2",
+    "open-clip-torch>=2.24,<2.25",
+    "pillow>=13.0.0",
+    "qdrant-client>=1.20,<1.21",
+    "pymupdf>=2.1",
+    "python-dotenv>=1.2.4",
+    "snowballstemmer>=3,<4",
+    "streamlit>=1.55,<2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+extend-exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
