@@ -1,10 +1,12 @@
-# MAINTiDOC — BGE-M3, Qdrant et MCP
+# MAINTiDOC — Assistant documentaire multimodal et agentique
 
 Assistant documentaire local pour la maintenance : questions sur des manuels PDF, réponses avec références aux pages, recherche de figures à partir d'une photo et consultation d'un registre de garanties fictif.
 
+L'architecture cible fournie pour MAINTiDOC s'adresse aux **techniciens et responsables de maintenance**. Elle prévoit une interface Web et des bots de messagerie, une API sécurisée, un RAG multimodal, un superviseur LangGraph et des outils MCP permettant de préparer des tickets soumis à validation humaine. Le dépôt contient actuellement le socle documentaire et un premier parcours agentique ; les composants restant à construire sont identifiés ci-dessous.
+
 Cette version reprend les fonctionnalités déjà réalisées dans [Agentic-AI-MCP](https://github.com/dounia1230/Agentic-AI-MCP/tree/48781917a48a68ad1b34dc72036e5178f2e63b8b), avec **BGE-M3 à la place de Nomic** et **Qdrant à la place de PGVector**. Elle conserve LangChain, LangGraph, MCP, LlamaIndex/PyMuPDF, le VLM local et Streamlit.
 
-## Fonctionnalités
+## Fonctionnalités actuelles
 
 - Importer des manuels PDF et extraire leur texte, leurs tableaux et leurs figures.
 - Poser une question technique et recevoir une réponse accompagnée des fichiers et pages consultés.
@@ -13,54 +15,145 @@ Cette version reprend les fonctionnalités déjà réalisées dans [Agentic-AI-M
 - Consulter un registre de garanties fictif, en lecture seule.
 - Piloter l'indexation et les questions documentaires via un serveur MCP Streamable HTTP.
 
-## Architecture
+## Architecture cible
+
+Le diagramme reprend les couches du schéma MAINTiDOC fourni. **Vert : composant présent ; bleu : composant partiel ou différent de la cible ; orange pointillé : composant prévu.** Un composant présent ne signifie pas que tous les critères de validation du projet sont acquis. Le tableau après le diagramme précise les écarts avec le code actuel.
 
 ```mermaid
 flowchart TD
-    subgraph Ingestion["Ingestion des manuels"]
-        PDF["Manuels PDF"] --> Extraction["LlamaIndex et PyMuPDF"]
-        Extraction --> Texte["Passages et tableaux"]
-        Extraction --> Figures["Images et schémas"]
-        Figures --> VLM["VLM local : Qwen3.5"]
-        VLM --> Descriptions["Descriptions visuelles"]
-        Texte --> BGE["BGE-M3 : 1024 dimensions"]
-        Descriptions --> BGE
-        Figures --> CLIPFigures["CLIP : 512 dimensions"]
+    Utilisateurs["Techniciens et responsables de maintenance"]
+
+    subgraph Clients["Clients utilisateurs"]
+        Web["Interface Web Streamlit"]
+        Telegram["Bot Telegram"]
+        Discord["Bot Discord"]
     end
 
-    subgraph Stockage["Qdrant"]
-        Passages[("Collection des passages")]
-        Images[("Collection des figures")]
-        Version["Version publiée commune"]
+    subgraph Securite["Couche API et sécurité"]
+        Auth["Authentification et autorisation<br/>JWT / OAuth, rôles et permissions"]
+        API["API REST FastAPI<br/>Questions, uploads et validation humaine"]
+        Sessions["Utilisateurs et sessions<br/>Comptes liés, historique, tokens d'approbation"]
+        Traces["Observabilité et traçabilité<br/>Requêtes, outils et tickets"]
     end
 
-    BGE --> Passages
-    CLIPFigures --> Images
-    Passages -.-> Version
-    Images -.-> Version
-
-    subgraph Consultation["Questions et réponses"]
-        Utilisateur["Technicien : question et photo facultative"] --> Client["Streamlit ou terminal"]
-        Client --> Routeur["Orchestrateur LangGraph"]
-        Routeur -->|Documentation| AgentDoc["Agent documentaire"]
-        Routeur -->|Garantie| AgentGarantie["Agent garantie"]
-        AgentDoc --> MCP["Client et serveur MCP"]
-        MCP --> RAG["RAG LangChain"]
-        RAG --> RechercheTexte["BM25 français et BGE-M3"]
-        RAG -->|Avec photo| RecherchePhoto["Recherche visuelle CLIP"]
-        RAG --> ReponseDoc["Réponse avec références fichier et page"]
-        AgentGarantie --> Registre[("Registre JSON fictif")]
-        Registre --> ReponseGarantie["Statut de garantie"]
-        ReponseDoc --> Retour["Retour à l'orchestrateur"]
-        ReponseGarantie --> Retour
-        Retour --> Fin["Réponse au technicien et fin"]
+    subgraph Ingestion["Ingestion et gestion du corpus"]
+        Sources["PDF, images et manuels"]
+        Extraction["PyMuPDF et OCR<br/>Texte, figures et tableaux"]
+        Decoupage["Découpage et enrichissement<br/>Page, équipement, version et droits"]
+        Embeddings["Embeddings textuels BGE-M3<br/>et visuels CLIP"]
+        Sources --> Extraction --> Decoupage --> Embeddings
     end
 
-    RechercheTexte <-->|Version publiée| Passages
-    RecherchePhoto <-->|Version publiée| Images
+    subgraph Orchestration["Orchestration agentique LangGraph"]
+        Conversation["Gestion de la conversation"]
+        Superviseur["Superviseur et planificateur<br/>Analyse, étapes, appels d'outils et clarifications"]
+        Verification["Vérification et structuration<br/>Références, Pydantic et incertitudes"]
+        Sortie["Réponse sourcée, clarification<br/>ou brouillon de ticket"]
+        Approbation["Approbation humaine explicite<br/>Liée au contenu exact et à l'utilisateur"]
+        Conversation --> Superviseur
+        Superviseur --> Verification --> Sortie
+        Sortie -->|Brouillon de ticket| Approbation
+    end
+
+    subgraph RAG["RAG multimodal"]
+        RechercheTexte["Recherche textuelle<br/>BGE-M3, BM25 et filtres de permissions"]
+        RechercheVisuelle["Recherche texte-image<br/>CLIP multilingue, figures et schémas"]
+        Fusion["Fusion Reciprocal Rank Fusion<br/>et reranker multilingue adapté"]
+        RechercheTexte --> Fusion
+        RechercheVisuelle --> Fusion
+    end
+
+    subgraph Vision["Modèle vision-langage à poids ouverts"]
+        VLM["Cible : Qwen2.5-VL-7B-Instruct<br/>Analyse d'images et génération multimodale"]
+    end
+
+    subgraph Maintenance["Outils MCP de maintenance"]
+        ClientMCP["Client MCP dans LangGraph"]
+        ServeurMCP["Serveur MCP<br/>Historique et tickets ouverts<br/>Création de ticket après approbation"]
+        ClientMCP <--> ServeurMCP
+    end
+
+    subgraph Stockage["Stockage et bases de données"]
+        Qdrant[("Qdrant<br/>Vecteurs textuels et visuels")]
+        PostgreSQL[("PostgreSQL<br/>Métadonnées, utilisateurs,<br/>permissions, conversations et tickets")]
+        MinIO[("MinIO<br/>Documents, images et figures")]
+        Modeles["Stockage et cache des modèles<br/>Poids VLM et reranker, Hugging Face"]
+    end
+
+    subgraph Exploitation["Suivi, évaluation et déploiement"]
+        MLflow["MLflow<br/>Expériences, versions, nDCG et MRR"]
+        Docker["Docker Compose<br/>Services et environnements reproductibles"]
+        Monitoring["Monitoring et logs<br/>Prometheus / Grafana, latence et GPU"]
+    end
+
+    Utilisateurs --> Web & Telegram & Discord
+    Web & Telegram & Discord --> Auth
+    Auth --> API
+    API <--> Sessions
+    API --> Traces
+    API -->|Documents| Sources
+    API --> Conversation
+    Approbation -->|Reprise approuvée| API
+    Sortie -->|Réponse au client| API
+    Superviseur <--> Fusion
+    Superviseur <--> VLM
+    Superviseur <--> ClientMCP
+    Embeddings --> Qdrant
+    RechercheTexte <--> Qdrant
+    RechercheVisuelle <--> Qdrant
+    Sources --> MinIO
+    Decoupage --> PostgreSQL
+    Sessions <--> PostgreSQL
+    ServeurMCP <--> PostgreSQL
+    ServeurMCP -.-> Traces
+    Modeles --> VLM & Fusion
+    Fusion -.-> MLflow
+    Traces --> Monitoring
+    Docker -.-> API & Qdrant & ServeurMCP
+
+    classDef present fill:#E7F4EA,stroke:#2E7D32,color:#12351B
+    classDef partiel fill:#E3F2FD,stroke:#1976D2,color:#12304A
+    classDef prevu fill:#FFF3E0,stroke:#B26A00,stroke-dasharray:5 5,color:#513300
+    class Sources,Embeddings,Qdrant present
+    class Web,Extraction,Decoupage,Superviseur,Sortie,RechercheTexte,RechercheVisuelle,VLM,ClientMCP,ServeurMCP,Docker partiel
+    class Telegram,Discord,Auth,API,Sessions,Traces,Conversation,Verification,Approbation,Fusion,PostgreSQL,MinIO,Modeles,MLflow,Monitoring prevu
 ```
 
-Le serveur MCP expose deux outils : `indexer_manuels()` et `rag_multimodal(question, photo_reference)`. L'agent documentaire appelle ce dernier pour consulter les manuels. L'agent de garantie utilise un outil local ; sa consultation ne nécessite ni MCP ni Qdrant. Chaque spécialiste rend la main à l'orchestrateur, qui termine le parcours.
+### Correspondance avec l'implémentation actuelle
+
+| Couche du schéma | Présent dans le dépôt | Évolution prévue |
+| --- | --- | --- |
+| Clients | Streamlit pour les questions, photos et imports ; client terminal | Bot Telegram ou Discord, consultation de l'historique de maintenance et validation des tickets |
+| API et sécurité | Validation locale des fichiers importés | FastAPI, authentification JWT/OAuth ou comptes locaux, rôles, permissions, comptes de messagerie associés et tokens d'approbation |
+| Ingestion | PyMuPDF/LlamaIndex, texte, tableaux, figures, pages et versions | OCR local pour les PDF scannés, métadonnées d'équipement et droits d'accès |
+| Orchestration | Routage LangGraph vers un agent documentaire ou de garantie | Gestion de conversation, planification, clarifications et interruption/reprise pour approbation humaine |
+| Vérification | Références documentaires conservées ; Pydantic utilisé pour le routage | Validation structurée des réponses, contrôle des références, incertitudes et demandes de clarification |
+| RAG multimodal | BGE-M3, BM25 français, Qdrant, descriptions VLM et similarité image-image CLIP | CLIP texte-image multilingue, filtres de permissions, fusion RRF et reranker adapté |
+| VLM | `qwen3.5:4b` via Ollama, pour décrire les figures pendant l'ingestion et générer les réponses textuelles | `Qwen2.5-VL-7B-Instruct` dans le schéma cible, avec analyse des photos dans le parcours de question |
+| MCP | Client et serveur documentaires avec `indexer_manuels` et `rag_multimodal` | Service de maintenance avec historique, tickets ouverts et création soumise à approbation |
+| Stockage | Qdrant pour les vecteurs et métadonnées ; fichiers et registre fictif en local ; caches de modèles locaux | PostgreSQL pour les données applicatives, MinIO pour les fichiers et versionnement des modèles |
+| Évaluation et exploitation | Tests automatisés, dépendances verrouillées et Compose pour Qdrant | MLflow, conteneurisation complète, traces centralisées, Prometheus/Grafana et mesures de latence/ressources |
+
+Le chemin exécuté aujourd'hui reste **Streamlit ou terminal → orchestrateur LangGraph → agent spécialisé → orchestrateur → fin**. L'agent documentaire utilise le client MCP puis le RAG ; l'agent de garantie consulte un registre JSON local en lecture seule. Chaque question démarre un nouvel état, sans mémoire conversationnelle transmise aux agents.
+
+### Modèles et fine-tuning
+
+| Modèle | Rôle dans l'architecture | Adaptation demandée |
+| --- | --- | --- |
+| BGE-M3 | Embeddings textuels pour la recherche documentaire | Utilisation du modèle préentraîné |
+| CLIP multilingue | Recherche texte-image et indexation visuelle dans la cible | Intégration de l'encodeur ; la version actuelle effectue une recherche image-image avec CLIP ViT-B-32 |
+| Reranker multilingue | Reclasser les passages retrouvés avant la génération | **Fine-tuning ciblé**, modèle exact à choisir |
+| Qwen2.5-VL-7B-Instruct | Analyse d'images et génération multimodale dans la cible | Intégration du VLM à poids ouverts ; aucun fine-tuning du VLM n'est imposé par la feuille de route |
+
+Le fine-tuning prévu porte sur le **reranker multilingue**. La feuille de route demande **800 à 1 500 exemples vérifiés**, puis une comparaison **sans reranker / avec reranker initial / avec reranker adapté**, mesurée avec **nDCG@5 et MRR@10**. Le reranker adapté doit être versionné ; MLflow est prévu dans l'architecture pour suivre ces expériences. BGE-M3 et le VLM remplissent des rôles distincts de ce classement.
+
+### Workflow de maintenance prévu
+
+Le superviseur doit consulter `get_equipment_history(equipment_id)` et `get_open_tickets(equipment_id)`, puis proposer un brouillon si un ticket est nécessaire. Le workflow s'interrompt pour une approbation humaine explicite. Le serveur vérifie les permissions et un token associé au contenu exact et à l'utilisateur avant d'accepter `create_ticket(equipment_id, title, description, approval_token)`. L'idempotence doit empêcher les créations en double, et une annulation doit abandonner l'action en attente. Ces outils de maintenance restent à implémenter.
+
+### Rôle des stockages dans la cible
+
+**Qdrant** conserve les index vectoriels textuels et visuels. **PostgreSQL** est prévu pour les métadonnées métier, les utilisateurs, les permissions, les conversations et les informations de tickets ; il n'a pas vocation à remplacer Qdrant par PGVector. **MinIO** doit conserver les documents originaux, images et figures. Les poids du VLM et du reranker doivent être stockés et versionnés séparément, avec un cache d'inférence. Pour le prototype actuel, les métadonnées documentaires restent dans Qdrant et les fichiers sur le disque local.
 
 ### RAG textuel et visuel
 
