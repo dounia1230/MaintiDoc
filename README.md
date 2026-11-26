@@ -20,70 +20,79 @@ Cette version reprend les fonctionnalités déjà réalisées dans [Agentic-AI-M
 Le diagramme reprend les couches du schéma MAINTiDOC fourni. **Vert : composant présent ; bleu : composant partiel ou différent de la cible ; orange pointillé : composant prévu.** Un composant présent ne signifie pas que tous les critères de validation du projet sont acquis. Le tableau après le diagramme précise les écarts avec le code actuel.
 
 ```mermaid
+%%{init: {"theme": "base", "fontFamily": "Inter, Segoe UI, Arial, sans-serif", "themeVariables": {"fontSize": "15px", "primaryColor": "#FFFFFF", "primaryTextColor": "#0F172A", "primaryBorderColor": "#CBD5E1", "lineColor": "#64748B", "secondaryColor": "#F8FAFC", "tertiaryColor": "#F1F5F9", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}, "flowchart": {"curve": "linear", "nodeSpacing": 40, "rankSpacing": 72, "padding": 22, "diagramPadding": 28, "htmlLabels": true, "useMaxWidth": true}, "themeCSS": ".cluster-label text, .cluster-label span { font-weight: 650; font-size: 17px; } .edgeLabel { font-size: 13px; } .nodeLabel { line-height: 1.5; }"}}%%
 flowchart TD
-    Utilisateurs["Techniciens et responsables de maintenance"]
+    Utilisateurs["Techniciens et responsables de<br/>maintenance"]
 
     subgraph Clients["Clients utilisateurs"]
+        direction LR
         Web["Interface Web Streamlit"]
         Telegram["Bot Telegram"]
         Discord["Bot Discord"]
     end
 
     subgraph Securite["Couche API et sécurité"]
-        Auth["Authentification et autorisation<br/>JWT / OAuth, rôles et permissions"]
-        API["API REST FastAPI<br/>Questions, uploads et validation humaine"]
-        Sessions["Utilisateurs et sessions<br/>Comptes liés, historique, tokens d'approbation"]
+        direction LR
+        Auth["Authentification et autorisation<br/>JWT / OAuth, rôles et<br/>permissions"]
+        API["API REST FastAPI<br/>Questions, uploads et validation<br/>humaine"]
+        Sessions["Utilisateurs et sessions<br/>Comptes liés, historique, tokens<br/>d'approbation"]
         Traces["Observabilité et traçabilité<br/>Requêtes, outils et tickets"]
     end
 
     subgraph Ingestion["Ingestion et gestion du corpus"]
+        direction TB
         Sources["PDF, images et manuels"]
         Extraction["PyMuPDF et OCR<br/>Texte, figures et tableaux"]
-        Decoupage["Découpage et enrichissement<br/>Page, équipement, version et droits"]
+        Decoupage["Découpage et enrichissement<br/>Page, équipement, version et<br/>droits"]
         Embeddings["Embeddings textuels BGE-M3<br/>et visuels CLIP"]
         Sources --> Extraction --> Decoupage --> Embeddings
     end
 
-    subgraph Orchestration["Orchestration agentique LangGraph"]
+    subgraph Orchestration["Orchestration agentique<br/>LangGraph"]
+        direction TB
         Conversation["Gestion de la conversation"]
-        Superviseur["Superviseur et planificateur<br/>Analyse, étapes, appels d'outils et clarifications"]
-        Verification["Vérification et structuration<br/>Références, Pydantic et incertitudes"]
+        Superviseur["Superviseur et planificateur<br/>Analyse, étapes, appels d'outils<br/>et clarifications"]
+        Verification["Vérification et structuration<br/>Références, Pydantic et<br/>incertitudes"]
         Sortie["Réponse sourcée, clarification<br/>ou brouillon de ticket"]
-        Approbation["Approbation humaine explicite<br/>Liée au contenu exact et à l'utilisateur"]
+        Approbation["Approbation humaine explicite<br/>Liée au contenu exact et à<br/>l'utilisateur"]
         Conversation --> Superviseur
         Superviseur --> Verification --> Sortie
         Sortie -->|Brouillon de ticket| Approbation
     end
 
     subgraph RAG["RAG multimodal"]
-        RechercheTexte["Recherche textuelle<br/>BGE-M3, BM25 et filtres de permissions"]
-        RechercheVisuelle["Recherche texte-image<br/>CLIP multilingue, figures et schémas"]
+        direction LR
+        RechercheTexte["Recherche textuelle<br/>BGE-M3, BM25 et filtres de<br/>permissions"]
+        RechercheVisuelle["Recherche texte-image<br/>CLIP multilingue, figures et<br/>schémas"]
         Fusion["Fusion Reciprocal Rank Fusion<br/>et reranker multilingue adapté"]
         RechercheTexte --> Fusion
         RechercheVisuelle --> Fusion
     end
 
-    subgraph Vision["Modèle vision-langage à poids ouverts"]
-        VLM["Cible : Qwen2.5-VL-7B-Instruct<br/>Analyse d'images et génération multimodale"]
+    subgraph Vision["Modèle vision-langage à poids<br/>ouverts"]
+        VLM["Cible : Qwen2.5-VL-7B-Instruct<br/>Analyse d'images et génération<br/>multimodale"]
     end
 
     subgraph Maintenance["Outils MCP de maintenance"]
+        direction LR
         ClientMCP["Client MCP dans LangGraph"]
-        ServeurMCP["Serveur MCP<br/>Historique et tickets ouverts<br/>Création de ticket après approbation"]
+        ServeurMCP["Serveur MCP<br/>Historique et tickets ouverts<br/>Création de ticket après<br/>approbation"]
         ClientMCP <--> ServeurMCP
     end
 
     subgraph Stockage["Stockage et bases de données"]
+        direction LR
         Qdrant[("Qdrant<br/>Vecteurs textuels et visuels")]
         PostgreSQL[("PostgreSQL<br/>Métadonnées, utilisateurs,<br/>permissions, conversations et tickets")]
         MinIO[("MinIO<br/>Documents, images et figures")]
-        Modeles["Stockage et cache des modèles<br/>Poids VLM et reranker, Hugging Face"]
+        Modeles["Stockage et cache des modèles<br/>Poids VLM et reranker, Hugging<br/>Face"]
     end
 
     subgraph Exploitation["Suivi, évaluation et déploiement"]
-        MLflow["MLflow<br/>Expériences, versions, nDCG et MRR"]
-        Docker["Docker Compose<br/>Services et environnements reproductibles"]
-        Monitoring["Monitoring et logs<br/>Prometheus / Grafana, latence et GPU"]
+        direction LR
+        MLflow["MLflow<br/>Expériences, versions, nDCG et<br/>MRR"]
+        Docker["Docker Compose<br/>Services et environnements<br/>reproductibles"]
+        Monitoring["Monitoring et logs<br/>Prometheus / Grafana, latence et<br/>GPU"]
     end
 
     Utilisateurs --> Web & Telegram & Discord
@@ -111,12 +120,25 @@ flowchart TD
     Traces --> Monitoring
     Docker -.-> API & Qdrant & ServeurMCP
 
-    classDef present fill:#E7F4EA,stroke:#2E7D32,color:#12351B
-    classDef partiel fill:#E3F2FD,stroke:#1976D2,color:#12304A
-    classDef prevu fill:#FFF3E0,stroke:#B26A00,stroke-dasharray:5 5,color:#513300
+    classDef present fill:#F0FDF4,stroke:#15803D,stroke-width:1.5px,color:#14532D,rx:10,ry:10
+    classDef partiel fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A5F,rx:10,ry:10
+    classDef prevu fill:#FFFBF5,stroke:#B7791F,stroke-width:1.2px,stroke-dasharray:6 4,color:#713F12,rx:10,ry:10
     class Sources,Embeddings,Qdrant present
     class Web,Extraction,Decoupage,Superviseur,Sortie,RechercheTexte,RechercheVisuelle,VLM,ClientMCP,ServeurMCP,Docker partiel
     class Telegram,Discord,Auth,API,Sessions,Traces,Conversation,Verification,Approbation,Fusion,PostgreSQL,MinIO,Modeles,MLflow,Monitoring prevu
+
+    style Utilisateurs fill:#0F2747,stroke:#0F2747,stroke-width:2px,color:#FFFFFF,rx:14,ry:14
+    style Superviseur fill:#DBEAFE,stroke:#1D4ED8,stroke-width:2.5px,color:#172554,rx:12,ry:12
+    style Clients fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px,color:#0F2747,rx:14,ry:14
+    style Securite fill:#FBFAF8,stroke:#D9D3C8,stroke-width:1px,color:#0F2747,rx:14,ry:14
+    style Ingestion fill:#F7FAFC,stroke:#B8CBD9,stroke-width:1px,color:#0F2747,rx:14,ry:14
+    style Orchestration fill:#F2F6FC,stroke:#93AFCF,stroke-width:1.5px,color:#0F2747,rx:14,ry:14
+    style RAG fill:#F7FAFC,stroke:#B8CBD9,stroke-width:1px,color:#0F2747,rx:14,ry:14
+    style Vision fill:#F7FAF8,stroke:#B8CFC1,stroke-width:1px,color:#0F2747,rx:14,ry:14
+    style Maintenance fill:#F8F9FC,stroke:#BFC8DB,stroke-width:1px,color:#0F2747,rx:14,ry:14
+    style Stockage fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px,color:#0F2747,rx:14,ry:14
+    style Exploitation fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px,color:#0F2747,rx:14,ry:14
+    linkStyle default stroke:#64748B,stroke-width:1.25px
 ```
 
 ### Correspondance avec l'implémentation actuelle
