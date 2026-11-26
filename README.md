@@ -19,6 +19,11 @@ Cette version reprend les fonctionnalités déjà réalisées dans [Agentic-AI-M
 
 Le diagramme reprend les couches du schéma MAINTiDOC fourni. **Vert : composant présent ; bleu : composant partiel ou différent de la cible ; orange pointillé : composant prévu.** Un composant présent ne signifie pas que tous les critères de validation du projet sont acquis. Le tableau après le diagramme précise les écarts avec le code actuel.
 
+[![Architecture cible MAINTiDOC](assets/architecture.svg)](assets/architecture.svg)
+
+<details>
+<summary>Voir le diagramme Mermaid</summary>
+
 ```mermaid
 %%{init: {"theme": "base", "fontFamily": "Inter, Segoe UI, Arial, sans-serif", "themeVariables": {"fontSize": "15px", "primaryColor": "#FFFFFF", "primaryTextColor": "#0F172A", "primaryBorderColor": "#CBD5E1", "lineColor": "#64748B", "secondaryColor": "#F8FAFC", "tertiaryColor": "#F1F5F9", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}, "flowchart": {"curve": "linear", "nodeSpacing": 40, "rankSpacing": 72, "padding": 22, "diagramPadding": 28, "htmlLabels": true, "useMaxWidth": true}, "themeCSS": ".cluster-label text, .cluster-label span { font-weight: 650; font-size: 17px; } .edgeLabel { font-size: 13px; } .nodeLabel { line-height: 1.5; }"}}%%
 flowchart TD
@@ -140,6 +145,8 @@ flowchart TD
     style Exploitation fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px,color:#0F2747,rx:14,ry:14
     linkStyle default stroke:#64748B,stroke-width:1.25px
 ```
+
+</details>
 
 ### Correspondance avec l'implémentation actuelle
 
